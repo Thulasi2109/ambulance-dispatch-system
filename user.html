@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Panel</title>
+  <style>
+    body{font-family:Arial;background:#eef3f7;margin:0}
+    header{background:#d90429;color:white;padding:20px;text-align:center}
+    .box{background:white;width:90%;margin:25px auto;padding:25px;border-radius:12px;box-shadow:0 0 10px #ccc}
+    input,select{width:90%;padding:10px;margin:8px;border:1px solid #ccc;border-radius:6px}
+    button,a{background:#d90429;color:white;border:none;padding:10px 16px;margin:6px;border-radius:6px;text-decoration:none;cursor:pointer}
+    .card{background:#f8f9fa;padding:14px;margin:12px 0;border-left:5px solid #d90429}
+  </style>
+</head>
+<body>
+<header><h1>User Panel</h1></header>
+
+<div class="box">
+  <h2>Register Emergency Request</h2>
+  <input id="userName" placeholder="Patient Name">
+  <input id="phone" placeholder="Phone Number">
+  <input id="location" placeholder="Location Name">
+  <input id="patientLat" type="number" step="any" placeholder="Patient Latitude">
+  <input id="patientLng" type="number" step="any" placeholder="Patient Longitude">
+
+  <select id="emergencyType">
+    <option>Accident</option>
+    <option>Heart Attack</option>
+    <option>Pregnancy Emergency</option>
+    <option>Fire Injury</option>
+    <option>Other</option>
+  </select>
+
+  <select id="severity">
+    <option value="1">Severity 1 - Low</option>
+    <option value="2">Severity 2</option>
+    <option value="3">Severity 3 - Medium</option>
+    <option value="4">Severity 4</option>
+    <option value="5">Severity 5 - Critical</option>
+  </select>
+
+  <button onclick="registerEmergency()">Submit Request</button>
+  <button onclick="viewRequests()">View Status</button>
+  <a href="index.html">Back</a>
+
+  <div id="output"></div>
+</div>
+
+<script>
+function getRequests(){ return JSON.parse(localStorage.getItem("requests")) || []; }
+function saveRequests(data){ localStorage.setItem("requests", JSON.stringify(data)); }
+
+function registerEmergency(){
+  let requests = getRequests();
+  let counter = Number(localStorage.getItem("requestCounter")) || 1;
+
+  let name = userName.value;
+  let phoneNo = phone.value;
+  let loc = location.value;
+  let lat = parseFloat(patientLat.value);
+  let lng = parseFloat(patientLng.value);
+
+  if(!name || !phoneNo || !loc || isNaN(lat) || isNaN(lng)){
+    alert("Please fill all details");
+    return;
+  }
+
+  let req = {
+    id: counter,
+    name:name,
+    phone:phoneNo,
+    location:loc,
+    lat:lat,
+    lng:lng,
+    type:emergencyType.value,
+    severity:parseInt(severity.value),
+    status:"Pending",
+    ambulanceId:"Not Assigned",
+    driver:"Not Assigned",
+    driverStatus:"Waiting"
+  };
+
+  requests.push(req);
+  saveRequests(requests);
+  localStorage.setItem("requestCounter", counter + 1);
+
+  output.innerHTML = `<div class="card">
+    <h3>Request Registered Successfully</h3>
+    <p><b>Request ID:</b> ${req.id}</p>
+    <p><b>Status:</b> ${req.status}</p>
+  </div>`;
+}
+
+function viewRequests(){
+  let requests = getRequests();
+  let html = "<h3>Request Status</h3>";
+
+  if(requests.length === 0) html += "<p>No requests found.</p>";
+
+  requests.forEach(r=>{
+    html += `<div class="card">
+      <p><b>Request ID:</b> ${r.id}</p>
+      <p><b>Patient:</b> ${r.name}</p>
+      <p><b>Emergency:</b> ${r.type}</p>
+      <p><b>Severity:</b> ${r.severity}</p>
+      <p><b>Status:</b> ${r.status}</p>
+      <p><b>Ambulance:</b> ${r.ambulanceId}</p>
+      <p><b>Driver:</b> ${r.driver}</p>
+      <p><b>Driver Status:</b> ${r.driverStatus}</p>
+    </div>`;
+  });
+
+  output.innerHTML = html;
+}
+</script>
+</body>
+</html>

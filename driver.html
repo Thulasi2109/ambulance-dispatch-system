@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Driver Panel</title>
+  <style>
+    body{font-family:Arial;background:#eef3f7;margin:0}
+    header{background:#d90429;color:white;padding:20px;text-align:center}
+    .box{background:white;width:90%;margin:25px auto;padding:25px;border-radius:12px;box-shadow:0 0 10px #ccc}
+    input{width:90%;padding:10px;margin:8px;border:1px solid #ccc;border-radius:6px}
+    button,a{background:#d90429;color:white;border:none;padding:10px 16px;margin:6px;border-radius:6px;text-decoration:none;cursor:pointer}
+    .card{background:#f8f9fa;padding:14px;margin:12px 0;border-left:5px solid #d90429}
+    #driverArea{display:none}
+  </style>
+</head>
+<body>
+<header><h1>Driver Panel</h1></header>
+
+<div class="box" id="loginBox">
+  <h2>Driver Login</h2>
+  <input id="driverId" placeholder="Enter Ambulance ID">
+  <button onclick="loginDriver()">Login</button>
+  <a href="index.html">Back</a>
+</div>
+
+<div class="box" id="driverArea">
+  <h2>Driver Dashboard</h2>
+
+  <button onclick="viewAssignedRequest()">View Assigned Request</button>
+  <button onclick="updateStatus('On the Way')">On the Way</button>
+  <button onclick="updateStatus('Patient Picked Up')">Patient Picked Up</button>
+  <button onclick="updateStatus('Completed')">Completed</button>
+  <a href="index.html">Logout</a>
+
+  <div id="output"></div>
+</div>
+
+<script>
+let loggedDriverId = null;
+
+function getRequests(){ return JSON.parse(localStorage.getItem("requests")) || []; }
+function saveRequests(data){ localStorage.setItem("requests", JSON.stringify(data)); }
+function getAmbulances(){ return JSON.parse(localStorage.getItem("ambulances")) || []; }
+function saveAmbulances(data){ localStorage.setItem("ambulances", JSON.stringify(data)); }
+
+function loginDriver(){
+  let id = driverId.value;
+  let ambulances = getAmbulances();
+  let amb = ambulances.find(a=>a.id === id);
+
+  if(!amb){
+    alert("Invalid Ambulance ID");
+    return;
+  }
+
+  loggedDriverId = id;
+  loginBox.style.display = "none";
+  driverArea.style.display = "block";
+}
+
+function viewAssignedRequest(){
+  let ambulances = getAmbulances();
+  let requests = getRequests();
+
+  let amb = ambulances.find(a=>a.id === loggedDriverId);
+
+  if(!amb || !amb.assignedRequestId){
+    output.innerHTML = "<p>No request assigned.</p>";
+    return;
+  }
+
+  let req = requests.find(r=>r.id === amb.assignedRequestId);
+
+  output.innerHTML = `<div class="card">
+    <h3>Assigned Patient Request</h3>
+    <p><b>Request ID:</b> ${req.id}</p>
+    <p><b>Patient:</b> ${req.name}</p>
+    <p><b>Phone:</b> ${req.phone}</p>
+    <p><b>Location:</b> ${req.location}</p>
+    <p><b>Patient GPS:</b> ${req.lat}, ${req.lng}</p>
+    <p><b>Emergency:</b> ${req.type}</p>
+    <p><b>Severity:</b> ${req.severity}</p>
+    <p><b>Status:</b> ${req.driverStatus}</p>
+  </div>`;
+}
+
+function updateStatus(status){
+  let ambulances = getAmbulances();
+  let requests = getRequests();
+
+  let amb = ambulances.find(a=>a.id === loggedDriverId);
+
+  if(!amb || !amb.assignedRequestId){
+    alert("No assigned request");
+    return;
+  }
+
+  let req = requests.find(r=>r.id === amb.assignedRequestId);
+  req.driverStatus = status;
+
+  if(status === "Completed"){
+    req.status = "Completed";
+    amb.status = "Available";
+    amb.assignedRequestId = null;
+  }
+
+  saveRequests(requests);
+  saveAmbulances(ambulances);
+
+  alert("Status Updated: " + status);
+  viewAssignedRequest();
+}
+</script>
+</body>
+</html>
