@@ -25,6 +25,11 @@
 <div class="box" id="driverArea">
   <h2>Driver Dashboard</h2>
 
+  <input id="driverLat" type="number" step="any" placeholder="Driver Latitude">
+  <input id="driverLng" type="number" step="any" placeholder="Driver Longitude">
+  <button onclick="getGPS('driverLat','driverLng')">Get Driver GPS</button>
+  <button onclick="saveDriverGPS()">Save Driver GPS</button>
+
   <button onclick="viewAssignedRequest()">View Assigned Request</button>
   <button onclick="updateStatus('On the Way')">On the Way</button>
   <button onclick="updateStatus('Patient Picked Up')">Patient Picked Up</button>
@@ -36,6 +41,20 @@
 
 <script>
 let loggedDriverId = null;
+
+function getGPS(latInputId, lngInputId) {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      document.getElementById(latInputId).value = position.coords.latitude;
+      document.getElementById(lngInputId).value = position.coords.longitude;
+      alert("GPS location fetched successfully!");
+    }, function() {
+      alert("Please allow location permission.");
+    });
+  } else {
+    alert("GPS not supported.");
+  }
+}
 
 function getRequests(){ return JSON.parse(localStorage.getItem("requests")) || []; }
 function saveRequests(data){ localStorage.setItem("requests", JSON.stringify(data)); }
@@ -53,8 +72,33 @@ function loginDriver(){
   }
 
   loggedDriverId = id;
+
+  if(amb.lat) driverLat.value = amb.lat;
+  if(amb.lng) driverLng.value = amb.lng;
+
   loginBox.style.display = "none";
   driverArea.style.display = "block";
+}
+
+function saveDriverGPS(){
+  let ambulances = getAmbulances();
+  let amb = ambulances.find(a=>a.id === loggedDriverId);
+
+  if(!amb){
+    alert("Driver not logged in");
+    return;
+  }
+
+  if(driverLat.value === "" || driverLng.value === ""){
+    alert("Please get GPS first");
+    return;
+  }
+
+  amb.lat = driverLat.value;
+  amb.lng = driverLng.value;
+
+  saveAmbulances(ambulances);
+  alert("Driver GPS saved successfully!");
 }
 
 function viewAssignedRequest(){
