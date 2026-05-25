@@ -16,11 +16,14 @@
 
 <div class="box">
   <h2>Register Emergency Request</h2>
+
   <input id="userName" placeholder="Patient Name">
   <input id="phone" placeholder="Phone Number">
   <input id="location" placeholder="Location Name">
+
   <input id="patientLat" type="number" step="any" placeholder="Patient Latitude">
   <input id="patientLng" type="number" step="any" placeholder="Patient Longitude">
+  <button onclick="getGPS('patientLat','patientLng')">Get My GPS Location</button>
 
   <select id="emergencyType">
     <option>Accident</option>
@@ -46,70 +49,77 @@
 </div>
 
 <script>
-function getRequests(){ return JSON.parse(localStorage.getItem("requests")) || []; }
-function saveRequests(data){ localStorage.setItem("requests", JSON.stringify(data)); }
+function getGPS(latInputId, lngInputId) {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      document.getElementById(latInputId).value = position.coords.latitude;
+      document.getElementById(lngInputId).value = position.coords.longitude;
+      alert("GPS location fetched successfully!");
+    }, function() {
+      alert("Please allow location permission.");
+    });
+  } else {
+    alert("GPS not supported.");
+  }
+}
+
+function getRequests(){
+  return JSON.parse(localStorage.getItem("requests")) || [];
+}
+
+function saveRequests(data){
+  localStorage.setItem("requests", JSON.stringify(data));
+}
+
+function getAmbulances(){
+  return JSON.parse(localStorage.getItem("ambulances")) || [];
+}
 
 function registerEmergency(){
   let requests = getRequests();
-  let counter = Number(localStorage.getItem("requestCounter")) || 1;
 
-  let name = userName.value;
-  let phoneNo = phone.value;
-  let loc = location.value;
-  let lat = parseFloat(patientLat.value);
-  let lng = parseFloat(patientLng.value);
-
-  if(!name || !phoneNo || !loc || isNaN(lat) || isNaN(lng)){
-    alert("Please fill all details");
-    return;
-  }
-
-  let req = {
-    id: counter,
-    name:name,
-    phone:phoneNo,
-    location:loc,
-    lat:lat,
-    lng:lng,
-    type:emergencyType.value,
-    severity:parseInt(severity.value),
-    status:"Pending",
-    ambulanceId:"Not Assigned",
-    driver:"Not Assigned",
-    driverStatus:"Waiting"
+  let request = {
+    id: "REQ" + Date.now(),
+    name: userName.value,
+    phone: phone.value,
+    location: location.value,
+    lat: patientLat.value,
+    lng: patientLng.value,
+    type: emergencyType.value,
+    severity: severity.value,
+    status: "Pending",
+    driverStatus: "Waiting",
+    ambulanceId: null
   };
 
-  requests.push(req);
+  requests.push(request);
   saveRequests(requests);
-  localStorage.setItem("requestCounter", counter + 1);
 
-  output.innerHTML = `<div class="card">
-    <h3>Request Registered Successfully</h3>
-    <p><b>Request ID:</b> ${req.id}</p>
-    <p><b>Status:</b> ${req.status}</p>
-  </div>`;
+  alert("Emergency request submitted successfully! Your Request ID is: " + request.id);
+  viewRequests();
 }
 
 function viewRequests(){
   let requests = getRequests();
-  let html = "<h3>Request Status</h3>";
+  let ambulances = getAmbulances();
 
-  if(requests.length === 0) html += "<p>No requests found.</p>";
+  output.innerHTML = "<h3>Request Status</h3>";
 
-  requests.forEach(r=>{
-    html += `<div class="card">
-      <p><b>Request ID:</b> ${r.id}</p>
-      <p><b>Patient:</b> ${r.name}</p>
-      <p><b>Emergency:</b> ${r.type}</p>
-      <p><b>Severity:</b> ${r.severity}</p>
-      <p><b>Status:</b> ${r.status}</p>
-      <p><b>Ambulance:</b> ${r.ambulanceId}</p>
-      <p><b>Driver:</b> ${r.driver}</p>
-      <p><b>Driver Status:</b> ${r.driverStatus}</p>
+  requests.forEach(req => {
+    let amb = ambulances.find(a => a.id === req.ambulanceId);
+
+    output.innerHTML += `<div class="card">
+      <p><b>Request ID:</b> ${req.id}</p>
+      <p><b>Patient:</b> ${req.name}</p>
+      <p><b>Location:</b> ${req.location}</p>
+      <p><b>Patient GPS:</b> ${req.lat}, ${req.lng}</p>
+      <p><b>Emergency:</b> ${req.type}</p>
+      <p><b>Status:</b> ${req.status}</p>
+      <p><b>Driver Status:</b> ${req.driverStatus}</p>
+      <p><b>Assigned Ambulance:</b> ${req.ambulanceId || "Not Assigned"}</p>
+      <p><b>Driver GPS:</b> ${amb ? amb.lat + ", " + amb.lng : "Not Available"}</p>
     </div>`;
   });
-
-  output.innerHTML = html;
 }
 </script>
 </body>
